@@ -37,7 +37,7 @@ function loadShader(glCtx: WebGL2RenderingContext, type: number, source: string)
 /** start gl rendering program
  * // TODO refractor with frame drawing
  */
-export function startRendering(glCtx: WebGL2RenderingContext) {
+export async function startRendering(glCtx: WebGL2RenderingContext) {
   const shaderProgram = initShaderProgram(glCtx, vertexShaderSrc, fragmentShaderSrc);
   if (!shaderProgram) return;
 
