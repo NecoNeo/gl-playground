@@ -45,6 +45,7 @@ export async function startRendering(glCtx: WebGL2RenderingContext) {
     program: shaderProgram,
     attribLocations: {
       vertexPosition: glCtx.getAttribLocation(shaderProgram, 'aVertexPosition'),
+      vertexColor: glCtx.getAttribLocation(shaderProgram, 'aVertexColor'),
     },
     uniformLocations: {
       projectionMatrix: glCtx.getUniformLocation(shaderProgram, 'uProjectionMatrix'),
@@ -73,6 +74,8 @@ export async function startRendering(glCtx: WebGL2RenderingContext) {
   mat4.translate(modelViewMatrix, modelViewMatrix, [-0.0, 0.0, -6.0]);
 
   setPositionAttribute(glCtx, buffers, programInfo);
+  setColorAttribute(glCtx, buffers, programInfo);
+
   glCtx.useProgram(programInfo.program);
   glCtx.uniformMatrix4fv(programInfo.uniformLocations.projectionMatrix, false, projectionMatrix);
   glCtx.uniformMatrix4fv(programInfo.uniformLocations.modelViewMatrix, false, modelViewMatrix);
@@ -93,4 +96,16 @@ function setPositionAttribute(glCtx: WebGL2RenderingContext, buffers: { position
   glCtx.bindBuffer(glCtx.ARRAY_BUFFER, buffers.position);
   glCtx.vertexAttribPointer(programInfo.attribLocations.vertexPosition, numComponents, type, normalize, stride, offset);
   glCtx.enableVertexAttribArray(programInfo.attribLocations.vertexPosition);
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function setColorAttribute(glCtx: WebGL2RenderingContext, buffers: { color: WebGLBuffer }, programInfo: any) {
+  const numComponents = 4;
+  const type = glCtx.FLOAT;
+  const normalize = false;
+  const stride = 0;
+  const offset = 0;
+  glCtx.bindBuffer(glCtx.ARRAY_BUFFER, buffers.color);
+  glCtx.vertexAttribPointer(programInfo.attribLocations.vertexColor, numComponents, type, normalize, stride, offset);
+  glCtx.enableVertexAttribArray(programInfo.attribLocations.vertexColor);
 }
