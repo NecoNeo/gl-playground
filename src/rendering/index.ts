@@ -37,7 +37,7 @@ function loadShader(glCtx: WebGL2RenderingContext, type: number, source: string)
 /** start gl rendering program
  * // TODO refractor with frame drawing
  */
-export async function startRendering(glCtx: WebGL2RenderingContext) {
+export async function startRendering(glCtx: WebGL2RenderingContext, setFps: (fps: string) => void) {
   const shaderProgram = initShaderProgram(glCtx, vertexShaderSrc, fragmentShaderSrc);
   if (!shaderProgram) return;
 
@@ -54,14 +54,46 @@ export async function startRendering(glCtx: WebGL2RenderingContext) {
   };
 
   const buffers = initBuffers(glCtx);
+  let squareRotation = 0;
+  let deltaTime = 0;
+  let accumTime = 0;
+  let now = new Date().getTime();
+  // eslint-disable-next-line no-constant-condition
+  while (true) {
+    drawSceneFrame(glCtx, buffers, programInfo, squareRotation);
+    await new Promise<void>((resolve) => {
+      requestAnimationFrame(() => {
+        resolve();
+      });
+    });
+    const then = new Date().getTime();
+    deltaTime = then - now;
+    accumTime += deltaTime;
+    now = then;
+    squareRotation += deltaTime / 1000;
+    if (accumTime > 250) {
+      setFps((1000 / deltaTime).toFixed(1));
+      accumTime = 0;
+    }
+  }
+}
 
+function drawSceneFrame(
+  glCtx: WebGL2RenderingContext,
+  buffers: {
+    position: WebGLBuffer;
+    color: WebGLBuffer;
+  },
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  programInfo: any,
+  squareRotation: number,
+) {
   // referece:
   // https://developer.mozilla.org/en-US/docs/Web/API/WebGL_API/Tutorial/Adding_2D_content_to_a_WebGL_context
   glCtx.clearColor(0, 0, 0, 1.0);
   glCtx.clearDepth(1.0);
   glCtx.enable(glCtx.DEPTH_TEST);
   glCtx.depthFunc(glCtx.LEQUAL);
-
   glCtx.clear(glCtx.COLOR_BUFFER_BIT | glCtx.DEPTH_BUFFER_BIT);
 
   const fieldOfView = (45 * Math.PI) / 180;
@@ -72,6 +104,7 @@ export async function startRendering(glCtx: WebGL2RenderingContext) {
   mat4.perspective(projectionMatrix, fieldOfView, aspect, zNear, zFar);
   const modelViewMatrix = mat4.create();
   mat4.translate(modelViewMatrix, modelViewMatrix, [-0.0, 0.0, -6.0]);
+  mat4.rotate(modelViewMatrix, modelViewMatrix, squareRotation, [0, 0, 1]);
 
   setPositionAttribute(glCtx, buffers, programInfo);
   setColorAttribute(glCtx, buffers, programInfo);
