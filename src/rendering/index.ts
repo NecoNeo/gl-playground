@@ -57,6 +57,7 @@ export async function startRendering(glCtx: WebGL2RenderingContext, setFps: (fps
   let squareRotation = 0;
   let deltaTime = 0;
   let accumTime = 0;
+  let frames = 0;
   let now = new Date().getTime();
   // eslint-disable-next-line no-constant-condition
   while (true) {
@@ -69,11 +70,13 @@ export async function startRendering(glCtx: WebGL2RenderingContext, setFps: (fps
     const then = new Date().getTime();
     deltaTime = then - now;
     accumTime += deltaTime;
+    frames++;
     now = then;
     squareRotation += deltaTime / 1000;
-    if (accumTime > 250) {
-      setFps((1000 / deltaTime).toFixed(1));
+    if (accumTime > 2000) {
+      setFps((frames / 2).toFixed(1));
       accumTime = 0;
+      frames = 0;
     }
   }
 }
