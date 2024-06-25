@@ -54,14 +54,16 @@ export async function startRendering(glCtx: WebGL2RenderingContext, setFps: (fps
   };
 
   const buffers = initBuffers(glCtx);
-  let squareRotation = 0;
+  // let squareRotation = 0;
+  let cubeRotation = 0.0;
   let deltaTime = 0;
   let accumTime = 0;
   let frames = 0;
   let now = new Date().getTime();
+  drawSceneFrame(glCtx, buffers, programInfo, cubeRotation);
   // eslint-disable-next-line no-constant-condition
   while (true) {
-    drawSceneFrame(glCtx, buffers, programInfo, squareRotation);
+    drawSceneFrame(glCtx, buffers, programInfo, cubeRotation);
     await new Promise<void>((resolve) => {
       requestAnimationFrame(() => {
         resolve();
@@ -72,7 +74,7 @@ export async function startRendering(glCtx: WebGL2RenderingContext, setFps: (fps
     accumTime += deltaTime;
     frames++;
     now = then;
-    squareRotation += deltaTime / 1000;
+    cubeRotation += deltaTime / 1000;
     if (accumTime > 2000) {
       setFps((frames / 2).toFixed(1));
       accumTime = 0;
@@ -86,10 +88,12 @@ function drawSceneFrame(
   buffers: {
     position: WebGLBuffer;
     color: WebGLBuffer;
+    indices: WebGLBuffer;
   },
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   programInfo: any,
-  squareRotation: number,
+  // squareRotation: number,
+  cubeRotation: number,
 ) {
   // referece:
   // https://developer.mozilla.org/en-US/docs/Web/API/WebGL_API/Tutorial/Adding_2D_content_to_a_WebGL_context
@@ -107,23 +111,61 @@ function drawSceneFrame(
   mat4.perspective(projectionMatrix, fieldOfView, aspect, zNear, zFar);
   const modelViewMatrix = mat4.create();
   mat4.translate(modelViewMatrix, modelViewMatrix, [-0.0, 0.0, -6.0]);
-  mat4.rotate(modelViewMatrix, modelViewMatrix, squareRotation, [0, 0, 1]);
+  // mat4.rotate(modelViewMatrix, modelViewMatrix, squareRotation, [0, 0, 1]);
+  mat4.rotate(
+    modelViewMatrix, // destination matrix
+    modelViewMatrix, // matrix to rotate
+    cubeRotation, // amount to rotate in radians
+    [0, 0, 1],
+  ); // axis to rotate around (Z)
+  mat4.rotate(
+    modelViewMatrix, // destination matrix
+    modelViewMatrix, // matrix to rotate
+    cubeRotation * 0.7, // amount to rotate in radians
+    [0, 1, 0],
+  ); // axis to rotate around (Y)
+  mat4.rotate(
+    modelViewMatrix, // destination matrix
+    modelViewMatrix, // matrix to rotate
+    cubeRotation * 0.3, // amount to rotate in radians
+    [1, 0, 0],
+  ); // axis to rotate around (X)
 
   setPositionAttribute(glCtx, buffers, programInfo);
   setColorAttribute(glCtx, buffers, programInfo);
+
+  glCtx.bindBuffer(glCtx.ELEMENT_ARRAY_BUFFER, buffers.indices);
 
   glCtx.useProgram(programInfo.program);
   glCtx.uniformMatrix4fv(programInfo.uniformLocations.projectionMatrix, false, projectionMatrix);
   glCtx.uniformMatrix4fv(programInfo.uniformLocations.modelViewMatrix, false, modelViewMatrix);
 
+  // const offset = 0;
+  // const vertexCount = 4;
+  // glCtx.drawArrays(glCtx.TRIANGLE_STRIP, offset, vertexCount);
+  const vertexCount = 36;
+  const type = glCtx.UNSIGNED_SHORT;
   const offset = 0;
-  const vertexCount = 4;
-  glCtx.drawArrays(glCtx.TRIANGLE_STRIP, offset, vertexCount);
+  glCtx.drawElements(glCtx.TRIANGLES, vertexCount, type, offset);
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function setPositionAttribute(glCtx: WebGL2RenderingContext, buffers: { position: WebGLBuffer }, programInfo: any) {
-  const numComponents = 2; // pull out 2 values per iteration
+function setPositionAttribute(
+  glCtx: WebGL2RenderingContext,
+  buffers: { position: WebGLBuffer; indices: WebGLBuffer },
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  programInfo: any,
+) {
+  // const numComponents = 2; // pull out 2 values per iteration
+  // const type = glCtx.FLOAT; // the data in the buffer is 32bit floats
+  // const normalize = false; // don't normalize
+  // const stride = 0; // how many bytes to get from one set of values to the next
+  // // 0 = use type and numComponents above
+  // const offset = 0; // how many bytes inside the buffer to start from
+  // glCtx.bindBuffer(glCtx.ARRAY_BUFFER, buffers.position);
+  // glCtx.vertexAttribPointer(programInfo.attribLocations.vertexPosition, numComponents, type, normalize, stride, offset);
+  // glCtx.enableVertexAttribArray(programInfo.attribLocations.vertexPosition);
+
+  const numComponents = 3; // pull out 3 values per iteration
   const type = glCtx.FLOAT; // the data in the buffer is 32bit floats
   const normalize = false; // don't normalize
   const stride = 0; // how many bytes to get from one set of values to the next
