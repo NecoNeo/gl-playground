@@ -1,7 +1,8 @@
 function initBuffers(glCtx: WebGL2RenderingContext) {
   return {
     position: initPositionBuffer(glCtx),
-    color: initColorBuffer(glCtx),
+    color: initColorBuffer(glCtx), // not used
+    textureCoord: initTextureBuffer(glCtx),
     indices: initIndexBuffer(glCtx),
   };
 }
@@ -72,8 +73,6 @@ function initColorBuffer(glCtx: WebGL2RenderingContext) {
   return colorBuffer;
 }
 
-export { initBuffers };
-
 function initIndexBuffer(glCtx: WebGL2RenderingContext) {
   const indexBuffer = glCtx.createBuffer();
   glCtx.bindBuffer(glCtx.ELEMENT_ARRAY_BUFFER, indexBuffer);
@@ -123,3 +122,29 @@ function initIndexBuffer(glCtx: WebGL2RenderingContext) {
   if (!indexBuffer) throw Error('initIndexBuffer failed');
   return indexBuffer;
 }
+
+function initTextureBuffer(glCtx: WebGL2RenderingContext) {
+  const textureCoordBuffer = glCtx.createBuffer();
+  glCtx.bindBuffer(glCtx.ARRAY_BUFFER, textureCoordBuffer);
+
+  const textureCoordinates = [
+    // Front
+    0.0, 0.0, 1.0, 0.0, 1.0, 1.0, 0.0, 1.0,
+    // Back
+    0.0, 0.0, 1.0, 0.0, 1.0, 1.0, 0.0, 1.0,
+    // Top
+    0.0, 0.0, 1.0, 0.0, 1.0, 1.0, 0.0, 1.0,
+    // Bottom
+    0.0, 0.0, 1.0, 0.0, 1.0, 1.0, 0.0, 1.0,
+    // Right
+    0.0, 0.0, 1.0, 0.0, 1.0, 1.0, 0.0, 1.0,
+    // Left
+    0.0, 0.0, 1.0, 0.0, 1.0, 1.0, 0.0, 1.0,
+  ];
+
+  glCtx.bufferData(glCtx.ARRAY_BUFFER, new Float32Array(textureCoordinates), glCtx.STATIC_DRAW);
+  if (!textureCoordBuffer) throw Error('initTextureCoordBuffer failed');
+  return textureCoordBuffer;
+}
+
+export { initBuffers };

@@ -1,5 +1,6 @@
 import { mat4 } from 'gl-matrix';
 import { initBuffers } from './init-buffers';
+import { loadTexture } from './load-texture';
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const vertexShaderSrc: string = require('raw-loader!./square.vert').default;
@@ -45,25 +46,31 @@ export async function startRendering(glCtx: WebGL2RenderingContext, setFps: (fps
     program: shaderProgram,
     attribLocations: {
       vertexPosition: glCtx.getAttribLocation(shaderProgram, 'aVertexPosition'),
-      vertexColor: glCtx.getAttribLocation(shaderProgram, 'aVertexColor'),
+      // vertexColor: glCtx.getAttribLocation(shaderProgram, 'aVertexColor'),
+      textureCoord: glCtx.getAttribLocation(shaderProgram, 'aTextureCoord'),
     },
     uniformLocations: {
       projectionMatrix: glCtx.getUniformLocation(shaderProgram, 'uProjectionMatrix'),
       modelViewMatrix: glCtx.getUniformLocation(shaderProgram, 'uModelViewMatrix'),
+      uSampler: glCtx.getUniformLocation(shaderProgram, 'uSampler'),
     },
   };
 
   const buffers = initBuffers(glCtx);
+
+  const texture = loadTexture(glCtx, './box_face.png');
+  glCtx.pixelStorei(glCtx.UNPACK_FLIP_Y_WEBGL, true); // Flip image pixels into the bottom-to-top order that WebGL expects.
+
   // let squareRotation = 0;
   let cubeRotation = 0.0;
   let deltaTime = 0;
   let accumTime = 0;
   let frames = 0;
   let now = new Date().getTime();
-  drawSceneFrame(glCtx, buffers, programInfo, cubeRotation);
+  drawSceneFrame(glCtx, texture, buffers, programInfo, cubeRotation);
   // eslint-disable-next-line no-constant-condition
   while (true) {
-    drawSceneFrame(glCtx, buffers, programInfo, cubeRotation);
+    drawSceneFrame(glCtx, texture, buffers, programInfo, cubeRotation);
     await new Promise<void>((resolve) => {
       requestAnimationFrame(() => {
         resolve();
@@ -85,9 +92,11 @@ export async function startRendering(glCtx: WebGL2RenderingContext, setFps: (fps
 
 function drawSceneFrame(
   glCtx: WebGL2RenderingContext,
+  texture: WebGLTexture,
   buffers: {
     position: WebGLBuffer;
     color: WebGLBuffer;
+    textureCoord: WebGLBuffer;
     indices: WebGLBuffer;
   },
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -132,13 +141,21 @@ function drawSceneFrame(
   ); // axis to rotate around (X)
 
   setPositionAttribute(glCtx, buffers, programInfo);
-  setColorAttribute(glCtx, buffers, programInfo);
+  // setColorAttribute(glCtx, buffers, programInfo);
+  setTextureAttribute(glCtx, buffers, programInfo);
 
   glCtx.bindBuffer(glCtx.ELEMENT_ARRAY_BUFFER, buffers.indices);
 
   glCtx.useProgram(programInfo.program);
   glCtx.uniformMatrix4fv(programInfo.uniformLocations.projectionMatrix, false, projectionMatrix);
   glCtx.uniformMatrix4fv(programInfo.uniformLocations.modelViewMatrix, false, modelViewMatrix);
+
+  // Tell WebGL we want to affect texture unit 0
+  glCtx.activeTexture(glCtx.TEXTURE0);
+  // Bind the texture to texture unit 0
+  glCtx.bindTexture(glCtx.TEXTURE_2D, texture);
+  // Tell the shader we bound the texture to texture unit 0
+  glCtx.uniform1i(programInfo.uniformLocations.uSampler, 0);
 
   // const offset = 0;
   // const vertexCount = 4;
@@ -177,13 +194,25 @@ function setPositionAttribute(
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function setColorAttribute(glCtx: WebGL2RenderingContext, buffers: { color: WebGLBuffer }, programInfo: any) {
-  const numComponents = 4;
-  const type = glCtx.FLOAT;
-  const normalize = false;
-  const stride = 0;
-  const offset = 0;
-  glCtx.bindBuffer(glCtx.ARRAY_BUFFER, buffers.color);
-  glCtx.vertexAttribPointer(programInfo.attribLocations.vertexColor, numComponents, type, normalize, stride, offset);
-  glCtx.enableVertexAttribArray(programInfo.attribLocations.vertexColor);
+// function setColorAttribute(glCtx: WebGL2RenderingContext, buffers: { color: WebGLBuffer }, programInfo: any) {
+//   const numComponents = 4;
+//   const type = glCtx.FLOAT;
+//   const normalize = false;
+//   const stride = 0;
+//   const offset = 0;
+//   glCtx.bindBuffer(glCtx.ARRAY_BUFFER, buffers.color);
+//   glCtx.vertexAttribPointer(programInfo.attribLocations.vertexColor, numComponents, type, normalize, stride, offset);
+//   glCtx.enableVertexAttribArray(programInfo.attribLocations.vertexColor);
+// }
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function setTextureAttribute(glCtx: WebGL2RenderingContext, buffers: { textureCoord: WebGLBuffer }, programInfo: any) {
+  const num = 2; // every coordinate composed of 2 values
+  const type = glCtx.FLOAT; // the data in the buffer is 32-bit float
+  const normalize = false; // don't normalize
+  const stride = 0; // how many bytes to get from one set to the next
+  const offset = 0; // how many bytes inside the buffer to start from
+  glCtx.bindBuffer(glCtx.ARRAY_BUFFER, buffers.textureCoord);
+  glCtx.vertexAttribPointer(programInfo.attribLocations.textureCoord, num, type, normalize, stride, offset);
+  glCtx.enableVertexAttribArray(programInfo.attribLocations.textureCoord);
 }
