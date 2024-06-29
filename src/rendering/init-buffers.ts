@@ -1,6 +1,7 @@
 function initBuffers(glCtx: WebGL2RenderingContext) {
   return {
     position: initPositionBuffer(glCtx),
+    normal: initNormalBuffer(glCtx),
     color: initColorBuffer(glCtx), // not used
     textureCoord: initTextureBuffer(glCtx),
     indices: initIndexBuffer(glCtx),
@@ -121,6 +122,30 @@ function initIndexBuffer(glCtx: WebGL2RenderingContext) {
   glCtx.bufferData(glCtx.ELEMENT_ARRAY_BUFFER, new Uint16Array(indices), glCtx.STATIC_DRAW);
   if (!indexBuffer) throw Error('initIndexBuffer failed');
   return indexBuffer;
+}
+
+function initNormalBuffer(glCtx: WebGL2RenderingContext) {
+  const normalBuffer = glCtx.createBuffer();
+  glCtx.bindBuffer(glCtx.ARRAY_BUFFER, normalBuffer);
+
+  const vertexNormals = [
+    // Front
+    0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0,
+    // Back
+    0.0, 0.0, -1.0, 0.0, 0.0, -1.0, 0.0, 0.0, -1.0, 0.0, 0.0, -1.0,
+    // Top
+    0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0,
+    // Bottom
+    0.0, -1.0, 0.0, 0.0, -1.0, 0.0, 0.0, -1.0, 0.0, 0.0, -1.0, 0.0,
+    // Right
+    1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0,
+    // Left
+    -1.0, 0.0, 0.0, -1.0, 0.0, 0.0, -1.0, 0.0, 0.0, -1.0, 0.0, 0.0,
+  ];
+
+  glCtx.bufferData(glCtx.ARRAY_BUFFER, new Float32Array(vertexNormals), glCtx.STATIC_DRAW);
+  if (!normalBuffer) throw Error('initNormalBuffer failed');
+  return normalBuffer;
 }
 
 function initTextureBuffer(glCtx: WebGL2RenderingContext) {

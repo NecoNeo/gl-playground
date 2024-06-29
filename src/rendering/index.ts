@@ -3,9 +3,9 @@ import { initBuffers } from './init-buffers';
 import { loadTexture } from './load-texture';
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
-const vertexShaderSrc: string = require('raw-loader!./square.vert').default;
+const vertexShaderSrc: string = require('raw-loader!./cube.vert').default;
 // eslint-disable-next-line @typescript-eslint/no-var-requires
-const fragmentShaderSrc: string = require('raw-loader!./square.frag').default;
+const fragmentShaderSrc: string = require('raw-loader!./cube.frag').default;
 
 function initShaderProgram(glCtx: WebGL2RenderingContext, vsSource: string, fsSource: string): WebGLProgram | null {
   const vertexShader = loadShader(glCtx, glCtx.VERTEX_SHADER, vsSource);
@@ -46,12 +46,14 @@ export async function startRendering(glCtx: WebGL2RenderingContext, setFps: (fps
     program: shaderProgram,
     attribLocations: {
       vertexPosition: glCtx.getAttribLocation(shaderProgram, 'aVertexPosition'),
+      vertexNormal: glCtx.getAttribLocation(shaderProgram, 'aVertexNormal'),
       // vertexColor: glCtx.getAttribLocation(shaderProgram, 'aVertexColor'),
       textureCoord: glCtx.getAttribLocation(shaderProgram, 'aTextureCoord'),
     },
     uniformLocations: {
       projectionMatrix: glCtx.getUniformLocation(shaderProgram, 'uProjectionMatrix'),
       modelViewMatrix: glCtx.getUniformLocation(shaderProgram, 'uModelViewMatrix'),
+      normalMatrix: glCtx.getUniformLocation(shaderProgram, 'uNormalMatrix'),
       uSampler: glCtx.getUniformLocation(shaderProgram, 'uSampler'),
     },
   };
@@ -95,6 +97,7 @@ function drawSceneFrame(
   texture: WebGLTexture,
   buffers: {
     position: WebGLBuffer;
+    normal: WebGLBuffer;
     color: WebGLBuffer;
     textureCoord: WebGLBuffer;
     indices: WebGLBuffer;
@@ -140,7 +143,12 @@ function drawSceneFrame(
     [1, 0, 0],
   ); // axis to rotate around (X)
 
+  const normalMatrix = mat4.create();
+  mat4.invert(normalMatrix, modelViewMatrix);
+  mat4.transpose(normalMatrix, normalMatrix);
+
   setPositionAttribute(glCtx, buffers, programInfo);
+  setNormalAttribute(glCtx, buffers, programInfo);
   // setColorAttribute(glCtx, buffers, programInfo);
   setTextureAttribute(glCtx, buffers, programInfo);
 
@@ -149,6 +157,7 @@ function drawSceneFrame(
   glCtx.useProgram(programInfo.program);
   glCtx.uniformMatrix4fv(programInfo.uniformLocations.projectionMatrix, false, projectionMatrix);
   glCtx.uniformMatrix4fv(programInfo.uniformLocations.modelViewMatrix, false, modelViewMatrix);
+  glCtx.uniformMatrix4fv(programInfo.uniformLocations.normalMatrix, false, normalMatrix);
 
   // Tell WebGL we want to affect texture unit 0
   glCtx.activeTexture(glCtx.TEXTURE0);
@@ -191,6 +200,18 @@ function setPositionAttribute(
   glCtx.bindBuffer(glCtx.ARRAY_BUFFER, buffers.position);
   glCtx.vertexAttribPointer(programInfo.attribLocations.vertexPosition, numComponents, type, normalize, stride, offset);
   glCtx.enableVertexAttribArray(programInfo.attribLocations.vertexPosition);
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function setNormalAttribute(glCtx: WebGL2RenderingContext, buffers: { normal: WebGLBuffer }, programInfo: any) {
+  const numComponents = 3;
+  const type = glCtx.FLOAT;
+  const normalize = false;
+  const stride = 0;
+  const offset = 0;
+  glCtx.bindBuffer(glCtx.ARRAY_BUFFER, buffers.normal);
+  glCtx.vertexAttribPointer(programInfo.attribLocations.vertexNormal, numComponents, type, normalize, stride, offset);
+  glCtx.enableVertexAttribArray(programInfo.attribLocations.vertexNormal);
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
